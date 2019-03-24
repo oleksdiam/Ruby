@@ -1,0 +1,37 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    aws-eventstream (1.0.2)
+    aws-sdk (2.11.244)
+      aws-sdk-resources (= 2.11.244)
+    aws-sdk-core (2.11.244)
+      aws-sigv4 (~> 1.0)
+      jmespath (~> 1.0)
+    aws-sdk-resources (2.11.244)
+      aws-sdk-core (= 2.11.244)
+    aws-sigv4 (1.1.0)
+      aws-eventstream (~> 1.0, >= 1.0.2)
+    cloudformation-ruby-dsl (1.2.3)
+      aws-sdk (>= 2.5.1)
+      bundler
+      detabulator
+      diffy
+      highline
+      json
+      rake
+    detabulator (0.1.0)
+    diffy (3.3.0)
+    highline (2.0.1)
+    jmespath (1.4.0)
+    json (2.2.0)
+    rake (12.3.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  aws-sdk (= 2.11.244)
+  cloudformation-ruby-dsl (= 1.2.3)
+
+BUNDLED WITH
+   2.0.1
