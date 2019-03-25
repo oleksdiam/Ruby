@@ -5,6 +5,7 @@ require 'cloudformation-ruby-dsl/table'
 
 tmpl = template do
   @stack_name = 'alb-testbench'
+  @region     = aws_region()
 
 #   metadata 'AWS::CloudFormation::Interface', {
 #     :ParameterGroups => [
@@ -84,7 +85,7 @@ tmpl = template do
 
   vpc = Table.load 'maps/subnets.txt'
 #   mapping 'VpcSubnets',
-  vpc.get_multihash(:zone, {:visibility => 'ptivate', :region => parameters['Region'], :env => parameters['Environment'], }, :subnet => ['a', 'b', 'c']).each_pair do |key, hashvalue|
+  vpc.get_multihash(:zone, {:visibility => 'ptivate', :region => @region, :env => parameters['Environment'], }, :subnet => ['a', 'b', 'c']).each_pair do |key, hashvalue|
     # resource 'Subnet-'+key, :Type => 'AWS::EC2::Subnet', :Properties => {
     #     :VpcId => parameters['VpcId'],
     #     :AvailabilityZone => value[:region]+key,
@@ -104,15 +105,22 @@ tmpl = template do
 
   output 'some_keys_and_values3',
         :Value => key.lenght,
-        :Description => 'Value of subnet'
+        :Description => 'Value of subnet'   
 
   end
           
   #    get_att(resource, attribute)
+#   AZs = get_azs(@region)
+  AZs = get_azs(aws_region())
+  output 'AZs',
+        :Value => select(0,AZs),
+        :Description => 'Values of AZS'   
+
 
   resource 'Subnet1a', :Type => 'AWS::EC2::Subnet', :Properties => {
             :VpcId => parameters['VpcId'],
-            :AvailabilityZone => parameters['Region']+'a',
+            # :AvailabilityZone => @region+'a',
+            :AvailabilityZone => select(0,AZs),
             :CidrBlock => "172.31.48.0/20",
             :Tags => [
                 {:Key => 'AZ',
@@ -123,7 +131,8 @@ tmpl = template do
 
   resource 'Subnet1b', :Type => 'AWS::EC2::Subnet', :Properties => {
             :VpcId => parameters['VpcId'],
-            :AvailabilityZone => parameters['Region']+'b',
+            # :AvailabilityZone => @region+'b',
+            :AvailabilityZone => select(1,AZs),
             :CidrBlock => "172.31.64.0/20",
             :Tags => [
                 {:Key => 'AZ',
@@ -134,7 +143,8 @@ tmpl = template do
 
   resource 'Subnet1c', :Type => 'AWS::EC2::Subnet', :Properties => {
             :VpcId => parameters['VpcId'],
-            :AvailabilityZone => parameters['Region']+'c',
+            # :AvailabilityZone => @region+'c',
+            :AvailabilityZone => select(2,AZs),
             :CidrBlock => "172.31.80.0/20",
             :Tags => [
                 {:Key => 'AZ',
@@ -167,18 +177,19 @@ tmpl = template do
             }
 
 
-  resource 'Route', :Type => '', :Properties => {
+  resource 'Route', :Type => 'AWS::EC2::Route', :Properties => {
     :DestinationCidrBlock => "0.0.0.0/0",
     :RouteTableId => ref('RouteTableInternal'),
     # :NatGatewayId     # HAVE TO BE but costs MONEY
     # :DestinationIpv6CidrBlock
     # :EgressOnlyInternetGatewayId
-    :GatewayId => ref()
+    :GatewayId => 'igw-3a67d652'
     # :InstanceId
     # :NetworkInterfaceId
     # :VpcPeeringConnectionId      
   }
 
+#   resource 'DefaultGW', :Type => '',  :Properties => {
 
   resource 'SecurityGroup', 
             :Type => 'AWS::EC2::SecurityGroup', 
@@ -210,11 +221,11 @@ tmpl = template do
   resource "ASG", 
             :Type => 'AWS::AutoScaling::AutoScalingGroup', 
             :Properties => {
-                :AvailabilityZones => ['us-east-2a', 'us-east-2b', 'us-east-2c'],
-                # :AvailabilityZones => [get_azs(parameters['Region'])],  # doesn't work
+                # :AvailabilityZones => ['us-east-2a', 'us-east-2b', 'us-east-2c'],
+                :AvailabilityZones => AZs,  # doesn't work
                 :LaunchConfigurationName => ref('LaunchConfig'),
                 :TargetGroupARNs => [ref('AlbTargetGroup')],
-                :VPCZoneIdentifier => [ref('Subnet1a', 'Subnet1b', 'Subnet1c')],
+                # :VPCZoneIdentifier => [ref('Subnet1a', 'Subnet1b', 'Subnet1c')],
                 :HealthCheckType => 'EC2',
                 :MinSize => 1,
                 :MaxSize => 5,
